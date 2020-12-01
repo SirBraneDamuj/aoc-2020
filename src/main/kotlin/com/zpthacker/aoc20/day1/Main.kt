@@ -51,7 +51,7 @@ fun nValuesAddingToTarget(ints: List<Int>, n: Int, target: Int): List<Int>? {
             null
         }
     } else {
-        for (i in ints.listIterator()) {
+        for (i in ints) {
             val result = nValuesAddingToTarget(
                 ints = ints,
                 n = n - 1,
