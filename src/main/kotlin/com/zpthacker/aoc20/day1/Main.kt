@@ -1,6 +1,7 @@
 package com.zpthacker.aoc20.day1
 
 import com.zpthacker.aoc20.getInputLines
+import com.zpthacker.aoc20.some
 
 fun main() {
     val ints = getInputLines("day1")
@@ -44,23 +45,22 @@ fun List<Int>.twoValuesAddingTo(target: Int): Pair<Int, Int>? {
 
 //part 2
 fun nValuesAddingToTarget(ints: List<Int>, n: Int, target: Int): List<Int>? {
-    if (n == 1) {
-        return if (ints.contains(target)) {
+    return if (n == 1) {
+        if (ints.contains(target)) {
             listOf(target)
         } else {
             null
         }
     } else {
-        for (i in ints) {
+        ints.some { i ->
             val result = nValuesAddingToTarget(
                 ints = ints,
                 n = n - 1,
                 target = target - i
             )
-            if (result != null) {
-                return listOf(i) + result
+            result?.let {
+                listOf(i) + result
             }
         }
-        return null
     }
 }
