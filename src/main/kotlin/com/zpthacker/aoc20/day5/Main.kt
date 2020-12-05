@@ -11,16 +11,16 @@ The next letter indicates which half of that region the seat is in, and so on un
 
 fun main() {
     val lines = getInputLines("day5")
-    val maxSeatId = lines
-        .map {
-            println(it)
-            val rowNumber = getRowNumber(it.dropLast(3), (0..127).toList())
-            val columnNumber = getRowNumber(it.takeLast(3), (0..7).toList())
-            rowNumber * 8 + columnNumber
-        }
-        .maxOrNull()
-    println(maxSeatId)
-
+    val seats = MutableList(128 * 8) { false }
+    lines.forEach {
+        val rowNumber = getRowNumber(it.dropLast(3), (0..127).toList())
+        val columnNumber = getRowNumber(it.takeLast(3), (0..7).toList())
+        val seatId = rowNumber * 8 + columnNumber
+        seats[seatId] = true
+    }
+    val missingSeatIds = (0 until seats.count())
+        .filter { it != 0 && it != seats.lastIndex && !seats[it] && seats[it+1] && seats[it-1] }
+    println(missingSeatIds.single())
 }
 
 tailrec fun getRowNumber(s: String, range: List<Int>): Int {
