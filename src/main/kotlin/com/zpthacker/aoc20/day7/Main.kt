@@ -4,59 +4,72 @@ import com.zpthacker.aoc20.getInputLines
 
 fun main() {
     val lines = getInputLines("day7")
-    val bagTypes = lines.fold(mutableMapOf<String, BagType>()) { acc, line ->
-        val bagType = bagRuleForLine(line)
-        acc[bagType.color] = bagType
-        acc
-    }
-    val traverser = BagTypeTraverser(bagTypes)
-    println(traverser.search("shiny gold", bagTypes["shiny aqua"]!!))
-    println(traverser.count("shiny gold"))
+    val bagMap = BagMap()
+    lines.forEach { addNodeForLine(bagMap, it) }
+    println(bagMap.nodes["shiny gold"]!!.sum() - 1)
 }
 
 
-fun bagRuleForLine(line: String): BagType {
+fun addNodeForLine(bagMap: BagMap, line: String) {
     val (colorToken, rest) = line.split(Regex(" contain( |s )"))
     val color = colorToken.dropLast(5)
     return if (rest.contains("no other bags")) {
-        BagType(color = color, contained = mapOf())
+        bagMap.addNode(color = color, edges = listOf())
     } else {
-        val contained = rest
+        val edges = rest
             .split(", ")
-            .fold(mutableMapOf<String, Int>()) { acc, rule ->
+            .map { rule ->
                 val tokens = rule.split(" ").dropLast(1)
                 val containedQuantity = tokens.first().toInt()
                 val containedColor = tokens.drop(1).joinToString(" ")
-                acc[containedColor] = containedQuantity
-                acc
+                BagEdge(color = containedColor, count = containedQuantity)
             }
-        BagType(color = color, contained = contained)
+        bagMap.addNode(color = color, edges = edges)
     }
 }
 
-class BagTypeTraverser(
-    private val bagTypes: Map<String, BagType>
-) {
-    fun count(targetColor: String): Int {
-        return bagTypes.values.count { bagType ->
-            search(targetColor, bagType)
-        }
+class BagMap {
+    val nodes = mutableMapOf<String, BagNode>()
+
+    fun addNode(color: String, edges: List<BagEdge>) {
+        nodes[color] = BagNode(color, edges)
     }
 
-    fun search(targetColor: String, bagType: BagType): Boolean {
-        return if (bagType.contained.containsKey(targetColor)) {
-            true
-        } else {
-            bagType.contained.keys.any {
-                val bt = bagTypes[it]
-                bt != null && search(targetColor, bt)
+    fun countPaths(target: String): Int {
+        return nodes.values.count { it.find(target) }
+    }
+
+    inner class BagNode(
+        val color: String,
+        val edges: List<BagEdge>
+    ) {
+        fun find(target: String): Boolean {
+            return edges.any { edge ->
+                if (edge.color == target) {
+                    true
+                } else {
+                    nodes[color]?.find(target) ?: false
+                }
+            }
+        }
+
+        fun sum(): Int {
+            return if (edges.count() == 0) {
+                1
+            } else {
+                var count = 0
+                edges.forEach { edge ->
+                    val node = nodes[edge.color]!!
+                    count += edge.count * node.sum()
+                }
+                1 + count
             }
         }
     }
 }
 
-class BagType(
+class BagEdge(
     val color: String,
-    val contained: Map<String, Int>
-) {
-}
+    val count: Int
+)
+
