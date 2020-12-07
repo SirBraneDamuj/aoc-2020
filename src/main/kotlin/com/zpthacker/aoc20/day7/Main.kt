@@ -6,6 +6,9 @@ fun main() {
     val lines = getInputLines("day7")
     val bagMap = BagMap()
     lines.forEach { addNodeForLine(bagMap, it) }
+    println("Part 1: How many bag colors contain at least one shiny bag?")
+    println(bagMap.countPaths("shiny gold"))
+    println("Part 2: How many bags does a single shiny gold bag contain?")
     println(bagMap.nodes["shiny gold"]!!.sum() - 1)
 }
 
@@ -32,7 +35,7 @@ class BagMap {
     val nodes = mutableMapOf<String, BagNode>()
 
     fun addNode(color: String, edges: List<BagEdge>) {
-        nodes[color] = BagNode(color, edges)
+        nodes[color] = BagNode(edges)
     }
 
     fun countPaths(target: String): Int {
@@ -40,7 +43,6 @@ class BagMap {
     }
 
     inner class BagNode(
-        val color: String,
         val edges: List<BagEdge>
     ) {
         fun find(target: String): Boolean {
@@ -48,7 +50,7 @@ class BagMap {
                 if (edge.color == target) {
                     true
                 } else {
-                    nodes[color]?.find(target) ?: false
+                    nodes[edge.color]?.find(target) ?: false
                 }
             }
         }
