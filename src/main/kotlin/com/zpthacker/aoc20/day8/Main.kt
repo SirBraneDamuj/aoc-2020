@@ -1,17 +1,38 @@
 package com.zpthacker.aoc20.day8
 
 import com.zpthacker.aoc20.getInputLines
-import java.lang.IllegalArgumentException
 
 fun main() {
     val lines = getInputLines("day8")
     val instructions = lines.map(::getInstructionForLine)
     val loopState = detectLoop(instructions)
     println(loopState.accumulator)
+
+    val correctedState = correctLoop(instructions)
+    println(correctedState.accumulator)
+}
+
+fun correctLoop(instructions: List<Instruction>): State {
+    for (index in instructions.indices) {
+        val instruction = instructions[index]
+        if (instruction.type == InstructionType.ACC) {
+            continue
+        }
+        val candidateProgram = instructions.toMutableList()
+        candidateProgram[index] = Instruction(
+            type = if (instruction.type == InstructionType.NOP) InstructionType.JUMP else InstructionType.NOP,
+            argument = instruction.argument
+        )
+        val potentialLoopState = detectLoop(candidateProgram)
+        if (potentialLoopState.halted) {
+            return potentialLoopState
+        }
+    }
+    throw RuntimeException()
 }
 
 fun detectLoop(instructions: List<Instruction>): State {
-    val state = State(0, 0)
+    val state = State()
     val visitedInstructions = mutableSetOf<Int>()
     while (state.pointer <= instructions.lastIndex) {
         val instruction = instructions[state.pointer]
@@ -22,7 +43,8 @@ fun detectLoop(instructions: List<Instruction>): State {
             instruction.execute(state)
         }
     }
-    throw RuntimeException()
+    state.halted = true
+    return state
 }
 
 fun getInstructionForLine(line: String): Instruction {
@@ -45,10 +67,11 @@ enum class InstructionType {
     NOP,
 }
 
-class State(
-    var accumulator: Int,
-    var pointer: Int
-)
+class State {
+    var accumulator: Int = 0
+    var pointer: Int = 0
+    var halted: Boolean = false
+}
 
 class Instruction(
     val type: InstructionType,
