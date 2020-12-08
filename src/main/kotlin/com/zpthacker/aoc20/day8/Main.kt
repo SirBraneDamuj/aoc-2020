@@ -5,30 +5,27 @@ import com.zpthacker.aoc20.getInputLines
 fun main() {
     val lines = getInputLines("day8")
     val instructions = lines.map(::getInstructionForLine)
+    println("Part 1: Accumulator value just before the loop begins")
     val loopState = detectLoop(instructions)
     println(loopState.accumulator)
 
+    println("Part 2: Accumulator value when the loop has been fixed")
     val correctedState = correctLoop(instructions)
     println(correctedState.accumulator)
 }
 
-fun correctLoop(instructions: List<Instruction>): State {
-    for (index in instructions.indices) {
-        val instruction = instructions[index]
-        if (instruction.type == InstructionType.ACC) {
-            continue
-        }
-        val candidateProgram = instructions.toMutableList()
-        candidateProgram[index] = Instruction(
-            type = if (instruction.type == InstructionType.NOP) InstructionType.JUMP else InstructionType.NOP,
-            argument = instruction.argument
-        )
-        val potentialLoopState = detectLoop(candidateProgram)
-        if (potentialLoopState.halted) {
-            return potentialLoopState
-        }
+fun getInstructionForLine(line: String): Instruction {
+    val (type, arg) = line.split(" ")
+    val instructionType = when (type) {
+        "jmp" -> InstructionType.JUMP
+        "acc" -> InstructionType.ACC
+        "nop" -> InstructionType.NOP
+        else -> throw IllegalArgumentException()
     }
-    throw RuntimeException()
+    return Instruction(
+        type = instructionType,
+        argument = arg.toInt()
+    )
 }
 
 fun detectLoop(instructions: List<Instruction>): State {
@@ -47,18 +44,23 @@ fun detectLoop(instructions: List<Instruction>): State {
     return state
 }
 
-fun getInstructionForLine(line: String): Instruction {
-    val (type, arg) = line.split(" ")
-    val instructionType = when (type) {
-        "jmp" -> InstructionType.JUMP
-        "acc" -> InstructionType.ACC
-        "nop" -> InstructionType.NOP
-        else -> throw IllegalArgumentException()
+fun correctLoop(instructions: List<Instruction>): State {
+    for (index in instructions.indices) {
+        val instruction = instructions[index]
+        if (instruction.type == InstructionType.ACC) {
+            continue
+        }
+        val candidateProgram = instructions.toMutableList()
+        candidateProgram[index] = Instruction(
+            type = if (instruction.type == InstructionType.NOP) InstructionType.JUMP else InstructionType.NOP,
+            argument = instruction.argument
+        )
+        val potentialLoopState = detectLoop(candidateProgram)
+        if (potentialLoopState.halted) {
+            return potentialLoopState
+        }
     }
-    return Instruction(
-        type = instructionType,
-        argument = arg.toInt()
-    )
+    throw RuntimeException("The loop could not be corrected.")
 }
 
 enum class InstructionType {
