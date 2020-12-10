@@ -12,48 +12,35 @@ fun main() {
     println(countPaths(tree, joltages.maxOrNull()!!))
 }
 
-fun countDiffs(joltages: List<Int>): Map<Int, Int> {
-    val diffs = mutableMapOf(
-        Pair(1, 0),
-        Pair(2, 0),
-        Pair(3, 0)
-    )
-    for (i in joltages.indices) {
-        val joltage = joltages[i]
-        if (i == 0) {
-            diffs.replace(joltage, 1)
-        } else {
-            val difference = joltages[i] - joltages[i - 1]
-            diffs.replace(difference, diffs[difference]!!.inc())
+fun countDiffs(joltages: List<Int>) =
+    mutableMapOf(Pair(1, 0), Pair(2, 0), Pair(3, 0)).apply {
+        for (i in joltages.indices) {
+            val joltage = joltages[i]
+            if (i == 0) {
+                this.replace(joltage, 1)
+            } else {
+                val difference = joltages[i] - joltages[i - 1]
+                this.replace(difference, this[difference]!!.inc())
+            }
         }
     }
-    return diffs
-}
 
-fun buildTree(joltages: List<Int>): Map<Int, List<Int>> {
-    return joltages.fold(mutableMapOf()) { acc, joltage ->
-        acc[joltage] = joltages.filter { it < joltage && (joltage - it) <= 3 }
-        acc
-    }
-}
+fun buildTree(joltages: List<Int>): Map<Int, List<Int>> =
+    joltages
+        .map { joltage ->
+            Pair(joltage, joltages.filter { it < joltage && (joltage - it) <= 3 })
+        }
+        .toMap()
 
 val cache = mutableMapOf<Int, Long>()
 
-fun countPaths(connections: Map<Int, List<Int>>, joltage: Int): Long {
-    val cacheLookup = cache[joltage]
-    return if (cacheLookup != null) {
-        cacheLookup
-    } else {
-        val result = if (joltage == 0) {
+fun countPaths(connections: Map<Int, List<Int>>, joltage: Int): Long =
+    cache.getOrPut(joltage) {
+        if (joltage == 0) {
             1L
         } else {
-            var sum = 0L
-            for (connection in connections.getValue(joltage)) {
-                sum += countPaths(connections, connection)
+            connections.getValue(joltage).fold(0L) { acc, connection ->
+                acc + countPaths(connections, connection)
             }
-            sum
         }
-        cache[joltage] = result
-        result
     }
-}
