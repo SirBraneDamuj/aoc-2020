@@ -15,14 +15,14 @@ fun main() {
             )
         }
     }
-    var numChanged = 0
+    var numChanged: Int
     var count = 0
     do {
         count++
+        println(count)
         simulate(rows)
         numChanged = countChanged(rows)
     } while (numChanged != 0)
-    println(count)
     val solution = rows.sumBy { row ->
         row.count { cell ->
             val occupied = cell.state == GridState.OCCUPIED
@@ -45,30 +45,44 @@ fun simulate(rows: List<List<GridCell>>) {
     }
 }
 
-fun adjacents(row: Int, col: Int): List<Pair<Int, Int>> {
-    return listOf(
-        Pair(row - 1, col - 1),
-        Pair(row - 1, col),
-        Pair(row - 1, col + 1),
-        Pair(row, col - 1),
-        Pair(row, col + 1),
-        Pair(row + 1, col - 1),
-        Pair(row + 1, col),
-        Pair(row + 1, col + 1)
-    )
+enum class Direction(
+    val rowInc: Int,
+    val colInc: Int
+) {
+    UPLEFT(-1, -1),
+    UP(-1, 0),
+    UPRIGHT(-1, 1),
+    LEFT(0, -1),
+    RIGHT(0, 1),
+    DOWNLEFT(1, -1),
+    DOWN(1, 0),
+    DOWNRIGHT(1, 1)
 }
 
-fun countAdjacent(rows: List<List<GridCell>>, state: GridState, row: Int, col: Int): Int {
-    val adjacentCells = adjacents(row, col)
-    return adjacentCells.count { (adjacentRow, adjacentCol) ->
-        adjacentRow in rows.indices
-                && adjacentCol in rows.first().indices
-                && rows[adjacentRow][adjacentCol].state == state
+fun countVisible(rows: List<List<GridCell>>, state: GridState, row: Int, col: Int): Int {
+    return Direction.values().count { direction ->
+        var rowPos = row + direction.rowInc
+        var colPos = col + direction.colInc
+        var seen = false
+        var found = false
+        while (rowPos in rows.indices && colPos in rows.first().indices && !seen) {
+            val cell = rows[rowPos][colPos]
+            if (cell.state != GridState.FLOOR) {
+                seen = true
+                if (cell.state == state) {
+                    found = true
+                }
+            } else {
+                rowPos += direction.rowInc
+                colPos += direction.colInc
+            }
+        }
+        found
     }
 }
 
 fun handleEmpty(rows: List<List<GridCell>>, row: Int, col: Int) {
-    val adjacentOccupied = countAdjacent(rows, GridState.OCCUPIED, row, col)
+    val adjacentOccupied = countVisible(rows, GridState.OCCUPIED, row, col)
     if (adjacentOccupied == 0) {
         val cell = rows[row][col]
         cell.newState = GridState.OCCUPIED
@@ -77,8 +91,8 @@ fun handleEmpty(rows: List<List<GridCell>>, row: Int, col: Int) {
 }
 
 fun handleOccupied(rows: List<List<GridCell>>, row: Int, col: Int) {
-    val adjacentOccupied = countAdjacent(rows, GridState.OCCUPIED, row, col)
-    if (adjacentOccupied >= 4) {
+    val adjacentOccupied = countVisible(rows, GridState.OCCUPIED, row, col)
+    if (adjacentOccupied >= 5) {
         val cell = rows[row][col]
         cell.newState = GridState.EMPTY
         cell.changed = true
