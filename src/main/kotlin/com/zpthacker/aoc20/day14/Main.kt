@@ -13,8 +13,10 @@ fun main() {
                 mask = maskFromMaskLine(line)
             }
             line.startsWith("mem") -> {
-                val (address, value) = memoryAssignmentForLine(mask, line)
-                memory[address] = value
+                val (addresses, value) = memoryAssignmentForLine(mask, line)
+                addresses.forEach {
+                    memory[it] = value
+                }
             }
         }
     }
@@ -24,7 +26,7 @@ fun main() {
 
 fun maskFromMaskLine(line: String) = line.split(" ").last()
 
-fun memoryAssignmentForLine(mask: String, line: String): Pair<Long, Long> {
+fun memoryAssignmentForLine(mask: String, line: String): Pair<List<Long>, Long> {
     val tokens = line.split(" ")
     val address = tokens
         .first()
@@ -32,17 +34,33 @@ fun memoryAssignmentForLine(mask: String, line: String): Pair<Long, Long> {
         .dropLast(1)
         .toLong()
     val value = tokens.last().toLong()
-    val bits = numberAsBits(value, 36)
-    val maskedBits = bits
-        .mapIndexed { index, c ->
-            if (mask[index] != 'X') {
-                mask[index]
-            } else {
-                c
+    val bits = numberAsBits(address, 36)
+    val addresses = mask
+        .mapIndexed { index, bit ->
+            when (bit) {
+                '0' -> bits[index]
+                '1' -> '1'
+                else -> bit // 1
             }
         }
         .joinToString("")
-    return Pair(address, bitsAsNumber(maskedBits))
+        .split("X")
+        .fold(listOf<String>()) { acc, segment ->
+            val variations = listOf("0", "1").map {
+                segment + it
+            }
+            if (acc.isEmpty()) {
+                variations
+            } else {
+                acc.flatMap { prefix ->
+                    variations.map { suffix ->
+                        prefix + suffix
+                    }
+                }
+            }
+        }
+        .map(::bitsAsNumber)
+    return Pair(addresses, value)
 }
 
 fun numberAsBits(number: Long, numBits: Int): String {
