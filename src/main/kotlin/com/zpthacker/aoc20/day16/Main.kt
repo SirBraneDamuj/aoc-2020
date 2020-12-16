@@ -1,8 +1,7 @@
 package com.zpthacker.aoc20.day16
 
 import com.zpthacker.aoc20.getInput
-import java.lang.NumberFormatException
-import java.text.NumberFormat
+import java.lang.RuntimeException
 
 fun main() {
     val lines = getInput("day16")
@@ -31,14 +30,45 @@ fun main() {
             throw e
         }
     }
-    val errorRate = otherTickets.fold(0) { acc, ticket ->
-        var errors = 0
-        ticket.forEach { field ->
-            if (rules.values.all { ranges -> ranges.none { range -> range.contains(field) }}) {
-                errors += field
+    val validTickets = otherTickets.filter { ticket ->
+        ticket.none { field ->
+            rules.values.all { ranges -> ranges.none { range -> range.contains(field) } }
+        }
+    }
+    val countingRules = rules.map { (fieldName, ranges) ->
+        TicketRule(fieldName, ranges, myTicket.count())
+    }
+    for (ticket in validTickets) {
+        for (rule in countingRules) {
+            for (position in ticket.indices) {
+                val field = ticket[position]
+                if (rule.ranges.none { range -> range.contains(field) }) {
+                    rule.removeInvalidPosition(position)
+                }
             }
         }
-        acc + errors
     }
-    println(errorRate)
+    val positions = mutableMapOf<String, Int>()
+    while (positions.count() != 20) {
+        val next = countingRules.find { it.validPositions.count() == 1 } ?: throw RuntimeException()
+        val position = next.validPositions.single()
+        positions[next.fieldName] = next.validPositions.single()
+        countingRules.forEach { it.removeInvalidPosition(position)}
+    }
+    val result = positions
+        .filter { (fieldName, _) -> fieldName.startsWith("departure") }
+        .map { (_, position) -> myTicket[position].toLong() }
+    println(result.reduce(Long::times))
+}
+
+class TicketRule(
+    val fieldName: String,
+    val ranges: List<IntRange>,
+    numPositions: Int
+) {
+    val validPositions = (0 until numPositions).toMutableSet()
+
+    fun removeInvalidPosition(position: Int) {
+        validPositions.remove(position)
+    }
 }
