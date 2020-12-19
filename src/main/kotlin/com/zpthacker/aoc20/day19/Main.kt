@@ -4,16 +4,44 @@ import com.zpthacker.aoc20.getInput
 
 fun main() {
     val (rulesString, messagesString) = getInput("day19").split("\n\n")
-    val rulesMap = parseRules(rulesString)
-    println("finished parsing rules")
-    val zeroRule = rulesMap["0"] ?: error("yikers")
     val messages = messagesString.split("\n")
-    val result = messages.count { message ->
-        zeroRule.matches.any { ruleMatch ->
-            message == ruleMatch
+    val rulesMap = parseRules(rulesString, messages.maxByOrNull { it.length }!!.length)
+    println("finished parsing rules")
+    val rule42Matches = rulesMap["42"]!!.matches
+    val rule31Matches = rulesMap["31"]!!.matches
+    val result = messages.filter { message ->
+        stringMatches(
+            message,
+            rule42Matches,
+            rule31Matches
+        )
+    }
+    println("Found ${result.count()} messages matching rule 0")
+}
+
+val matchSize = 8
+fun stringMatches(s: String, rule42Matches: List<String>, rule31Matches: List<String>): Boolean {
+    if (s.length % matchSize != 0) return false
+    var matches: List<String> = s.chunked(matchSize)
+    while (matches.isNotEmpty() && rule42Matches.contains(matches.first())) {
+        matches = matches.drop(1)
+        if (matches.isEmpty() || matches.count() % 2 != 0) {
+            continue
+        } else {
+            var suffixMatches = matches.toList()
+            var found = true
+            while (suffixMatches.isNotEmpty()) {
+                if (rule42Matches.contains(suffixMatches.first()) && rule31Matches.contains(suffixMatches.last())) {
+                    suffixMatches = suffixMatches.subList(1, suffixMatches.lastIndex)
+                } else {
+                    found = false
+                    break
+                }
+            }
+            if (found) return true
         }
     }
-    println("Found $result messages matching rule 0")
+    return false
 }
 
 interface Rule {
@@ -60,11 +88,12 @@ class OrRule(
     }
 }
 
-fun parseRules(rulesString: String): Map<String, Rule> {
+fun parseRules(rulesString: String, maxMessageLength: Int): Map<String, Rule> {
     val rulesMap = mutableMapOf<String, Rule>()
     val rulesTokens = rulesString
         .split("\n")
         .map { it.split(" ") }
+        .filterNot { it.first() == "8:" || it.first() == "11:" || it.first() == "0:" }
         .toMutableList()
     while (rulesTokens.isNotEmpty()) {
         val nextIndex = rulesTokens.indexOfFirst { tokens ->
@@ -118,4 +147,3 @@ fun parseRules(rulesString: String): Map<String, Rule> {
     }
     return rulesMap
 }
-
